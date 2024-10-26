@@ -27,8 +27,8 @@ function Login() {
 
     try {
       const res = await axios.post('/auth/login', { email, password });
-      // Store token or necessary data if login succeeds
-      navigate('/dashboard');
+      localStorage.setItem('token', res.data.token); // Store token
+      navigate('/chess'); // Redirect to chessboard page after login
     } catch (err) {
       setError('Invalid credentials, please try again.');
     }

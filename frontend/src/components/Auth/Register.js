@@ -32,7 +32,7 @@ function Register() {
 
     try {
       await axios.post('/auth/register', { username, email, password });
-      navigate('/login');
+      navigate('/login'); // Redirect to login page after successful registration
     } catch (err) {
       setError('Failed to register. Please try again.');
     }
