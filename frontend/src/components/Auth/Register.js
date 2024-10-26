@@ -9,8 +9,27 @@ function Register() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const validateForm = () => {
+    if (!username) {
+      setError('Username is required.');
+      return false;
+    }
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email.');
+      return false;
+    }
+    if (!password || password.length < 6) {
+      setError('Password should be at least 6 characters long.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       await axios.post('/api/auth/register', { username, email, password });
       navigate('/login');

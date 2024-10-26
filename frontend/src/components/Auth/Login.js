@@ -8,11 +8,26 @@ function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const validateForm = () => {
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email.');
+      return false;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       const res = await axios.post('/api/auth/login', { email, password });
-      // Store token or any necessary data
+      // Store token or necessary data if login succeeds
       navigate('/dashboard');
     } catch (err) {
       setError('Invalid credentials, please try again.');
