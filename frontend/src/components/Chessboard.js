@@ -53,20 +53,32 @@ function ChessGame() {
     setStatus('');
   };
 
+  const undoMove = () => {
+    // Implement undo functionality if needed
+  };
+
   return (
-    <div className="flex flex-col items-center p-4">
-      <h2 className="text-2xl font-bold">Chess Game</h2>
-      <div className="mt-4">
+    <div className="flex flex-col items-center p-4 bg-gray-100 min-h-screen">
+      <h2 className="text-2xl font-bold mb-4">Chess Game</h2>
+      <div className="mt-4" style={{ width: '400px', height: '400px' }}>
         <Chessboard position={fen} onPieceDrop={onDrop} />
       </div>
       <p className="mt-2 text-lg">Turn: {turn === 'w' ? 'White' : 'Black'}</p>
       <p className="text-lg font-semibold">{status}</p>
-      <button
-        onClick={resetGame}
-        className="mt-4 px-4 py-2 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700"
-      >
-        Reset Game
-      </button>
+      <div className="flex mt-4 space-x-4">
+        <button
+          onClick={resetGame}
+          className="px-4 py-2 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700"
+        >
+          Reset Game
+        </button>
+        <button
+          onClick={undoMove}
+          className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
+        >
+          Undo Move
+        </button>
+      </div>
     </div>
   );    
 }
