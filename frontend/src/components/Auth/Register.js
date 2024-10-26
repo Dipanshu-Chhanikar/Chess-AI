@@ -31,7 +31,7 @@ function Register() {
     if (!validateForm()) return;
 
     try {
-      await axios.post('/api/auth/register', { username, email, password });
+      await axios.post('/auth/register', { username, email, password });
       navigate('/login');
     } catch (err) {
       setError('Failed to register. Please try again.');

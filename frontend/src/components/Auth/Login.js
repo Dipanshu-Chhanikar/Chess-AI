@@ -26,7 +26,7 @@ function Login() {
     if (!validateForm()) return;
 
     try {
-      const res = await axios.post('/api/auth/login', { email, password });
+      const res = await axios.post('/auth/login', { email, password });
       // Store token or necessary data if login succeeds
       navigate('/dashboard');
     } catch (err) {
