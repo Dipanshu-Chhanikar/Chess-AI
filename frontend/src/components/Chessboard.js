@@ -20,6 +20,7 @@ function ChessGame() {
     const [fen, setFen] = useState(game.fen());
     const [moveHistory, setMoveHistory] = useState([]);
     const [prevFenHistory, setPrevFenHistory] = useState([]);
+    const [redoStack, setRedoStack] = useState([]); // Redo stack
     const [status, setStatus] = useState('');
     const [capturedWhite, setCapturedWhite] = useState([]);
     const [capturedBlack, setCapturedBlack] = useState([]);
@@ -31,13 +32,14 @@ function ChessGame() {
 
         if (result) {
             setPrevFenHistory((prev) => [...prev, game.fen()]); // Save previous FEN
+            setRedoStack([]); // Clear redo stack on a new move
             
             // Capture the piece if there is one
             if (targetPiece) {
                 if (targetPiece.color === 'w') {
-                    setCapturedBlack((prev) => [...prev, targetPiece.type]); // Black captures white piece
+                    setCapturedBlack((prev) => [...prev, targetPiece.type]);
                 } else {
-                    setCapturedWhite((prev) => [...prev, targetPiece.type]); // White captures black piece
+                    setCapturedWhite((prev) => [...prev, targetPiece.type]);
                 }
             }
 
@@ -80,10 +82,31 @@ function ChessGame() {
         
         if (lastFen) {
             const gameCopy = new Chess(lastFen);
+            const lastMove = moveHistory[moveHistory.length - 1];
+
             setGame(gameCopy);
             setFen(gameCopy.fen());
             setMoveHistory(moveHistory.slice(0, -1)); // Remove last move
             setPrevFenHistory(prevFenHistory.slice(0, -1)); // Remove last FEN
+            setRedoStack((prev) => [...prev, lastMove]); // Push last move to redo stack
+            updateStatus(gameCopy);
+        }
+    };
+
+    const handleRedo = () => {
+        if (redoStack.length === 0) return;
+
+        const moveToRedo = redoStack[redoStack.length - 1];
+        const gameCopy = new Chess(game.fen());
+        const move = gameCopy.move(moveToRedo);
+        
+        if (move) {
+            setPrevFenHistory((prev) => [...prev, game.fen()]); // Save previous FEN
+            setRedoStack(redoStack.slice(0, -1)); // Remove last move from redo stack
+            
+            setGame(gameCopy);
+            setFen(gameCopy.fen());
+            setMoveHistory((prev) => [...prev, move.san]); // Save the SAN of the move
             updateStatus(gameCopy);
         }
     };
@@ -118,17 +141,9 @@ function ChessGame() {
                     </div>
                 </div>
                 <p className="text-lg font-semibold text-white">{status}</p>
-                <div className="flex mt-4 space-x-4">
-                    <button
-                        onClick={handleUndo}
-                        className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
-                    >
-                        Undo Move
-                    </button>
-                </div>
             </div>
             <div className="ml-8 flex flex-col w-[400px] bg-[#302E2B] border border-white rounded-lg shadow-lg p-4">
-                <h3 className="font-bold text-lg text-center mb-2 text-green-400">White Moves</h3>
+                <h3 className="font-bold text-lg text-center mb-2 text-green-400">Move History</h3>
                 <div className="flex flex-col h-80 overflow-y-auto">
                     <div className="flex">
                         <div className="flex flex-col w-1/2 pr-2">
@@ -162,6 +177,20 @@ function ChessGame() {
                     </div>
                 </div>
                 <div className="flex flex-col p-4 border-t mt-2">
+                    <div className="flex justify-between mb-2">
+                        <button
+                            onClick={handleUndo}
+                            className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
+                        >
+                            &lt; Undo
+                        </button>
+                        <button
+                            onClick={handleRedo}
+                            className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
+                        >
+                            Redo &gt;
+                        </button>
+                    </div>
                     <h3 className="font-bold text-lg text-center text-white">Chat Section</h3>
                     <p className="text-center text-gray-500">Chat functionality coming soon...</p>
                 </div>
