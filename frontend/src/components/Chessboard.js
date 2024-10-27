@@ -20,10 +20,29 @@ function ChessGame() {
     const [fen, setFen] = useState(game.fen());
     const [moveHistory, setMoveHistory] = useState([]);
     const [prevFenHistory, setPrevFenHistory] = useState([]);
-    const [redoStack, setRedoStack] = useState([]); // Redo stack
+    const [redoStack, setRedoStack] = useState([]);
     const [status, setStatus] = useState('');
     const [capturedWhite, setCapturedWhite] = useState([]);
     const [capturedBlack, setCapturedBlack] = useState([]);
+    const [drawRequested, setDrawRequested] = useState(false);
+    const [drawAccepted, setDrawAccepted] = useState(false);
+    const [drawHistory, setDrawHistory] = useState({ white: false, black: false });
+    const [chatMessages, setChatMessages] = useState([]); // Chat messages state
+
+    const resetGame = () => {
+        setGame(new Chess());
+        setFen(new Chess().fen());
+        setMoveHistory([]);
+        setPrevFenHistory([]);
+        setRedoStack([]);
+        setCapturedWhite([]);
+        setCapturedBlack([]);
+        setStatus('');
+        setDrawRequested(false);
+        setDrawAccepted(false);
+        setDrawHistory({ white: false, black: false });
+        setChatMessages([]); // Reset chat messages
+    };
 
     const makeMove = (move) => {
         const gameCopy = new Chess(game.fen());
@@ -31,10 +50,9 @@ function ChessGame() {
         const result = gameCopy.move(move);
 
         if (result) {
-            setPrevFenHistory((prev) => [...prev, game.fen()]); // Save previous FEN
-            setRedoStack([]); // Clear redo stack on a new move
-            
-            // Capture the piece if there is one
+            setPrevFenHistory((prev) => [...prev, game.fen()]);
+            setRedoStack([]);
+
             if (targetPiece) {
                 if (targetPiece.color === 'w') {
                     setCapturedBlack((prev) => [...prev, targetPiece.type]);
@@ -45,7 +63,7 @@ function ChessGame() {
 
             setGame(gameCopy);
             setFen(gameCopy.fen());
-            setMoveHistory((prev) => [...prev, result.san]); // Save the SAN of the move
+            setMoveHistory((prev) => [...prev, result.san]);
             updateStatus(gameCopy);
         }
 
@@ -56,10 +74,10 @@ function ChessGame() {
         const move = makeMove({
             from: sourceSquare,
             to: targetSquare,
-            promotion: 'q', // Always promote to queen for simplicity
+            promotion: 'q',
         });
 
-        if (!move) return false; // Invalid move
+        if (!move) return false;
         return true;
     };
 
@@ -79,16 +97,16 @@ function ChessGame() {
         if (moveHistory.length === 0) return;
 
         const lastFen = prevFenHistory[prevFenHistory.length - 1];
-        
+
         if (lastFen) {
             const gameCopy = new Chess(lastFen);
             const lastMove = moveHistory[moveHistory.length - 1];
 
             setGame(gameCopy);
             setFen(gameCopy.fen());
-            setMoveHistory(moveHistory.slice(0, -1)); // Remove last move
-            setPrevFenHistory(prevFenHistory.slice(0, -1)); // Remove last FEN
-            setRedoStack((prev) => [...prev, lastMove]); // Push last move to redo stack
+            setMoveHistory(moveHistory.slice(0, -1));
+            setPrevFenHistory(prevFenHistory.slice(0, -1));
+            setRedoStack((prev) => [...prev, lastMove]);
             updateStatus(gameCopy);
         }
     };
@@ -99,19 +117,47 @@ function ChessGame() {
         const moveToRedo = redoStack[redoStack.length - 1];
         const gameCopy = new Chess(game.fen());
         const move = gameCopy.move(moveToRedo);
-        
+
         if (move) {
-            setPrevFenHistory((prev) => [...prev, game.fen()]); // Save previous FEN
-            setRedoStack(redoStack.slice(0, -1)); // Remove last move from redo stack
-            
+            setPrevFenHistory((prev) => [...prev, game.fen()]);
+            setRedoStack(redoStack.slice(0, -1));
+
             setGame(gameCopy);
             setFen(gameCopy.fen());
-            setMoveHistory((prev) => [...prev, move.san]); // Save the SAN of the move
+            setMoveHistory((prev) => [...prev, move.san]);
             updateStatus(gameCopy);
         }
     };
 
-    // Separate move history for white and black
+    const requestDraw = () => {
+        const currentPlayer = game.turn() === 'w' ? 'white' : 'black';
+        if (drawHistory[currentPlayer]) {
+            setChatMessages((prev) => [...prev, "You have already requested a draw."]);
+            return;
+        }
+        setDrawRequested(true);
+        setDrawHistory((prev) => ({ ...prev, [currentPlayer]: true }));
+        setChatMessages((prev) => [...prev, `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} has requested a draw.`]);
+    };
+
+    const acceptDraw = () => {
+        const currentPlayer = game.turn() === 'w' ? 'black' : 'white';
+        if (drawRequested && !drawAccepted) {
+            setDrawAccepted(true);
+            setChatMessages((prev) => [...prev, `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} accepts the draw. The game is drawn by mutual agreement.`]);
+            resetGame();
+        } else {
+            setChatMessages((prev) => [...prev, "No draw request to accept or you've already accepted a draw."]);
+        }
+    };
+
+    const declineDraw = () => {
+        if (drawRequested) {
+            setDrawRequested(false);
+            setChatMessages((prev) => [...prev, "Draw request declined."]);
+        }
+    };
+
     const whiteMoves = moveHistory.filter((_, index) => index % 2 === 0);
     const blackMoves = moveHistory.filter((_, index) => index % 2 !== 0);
 
@@ -182,17 +228,40 @@ function ChessGame() {
                             onClick={handleUndo}
                             className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
                         >
-                            &lt; Undo
+                            &lt;
                         </button>
                         <button
                             onClick={handleRedo}
                             className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
                         >
-                            Redo &gt;
+                            &gt;
+                        </button>
+                        <button
+                            onClick={requestDraw}
+                            className="px-4 py-2 bg-gray-600 text-white font-bold rounded hover:bg-gray-700"
+                        >
+                            Draw 1/2
                         </button>
                     </div>
                     <h3 className="font-bold text-lg text-center text-white">Chat Section</h3>
-                    <p className="text-center text-gray-500">Chat functionality coming soon...</p>
+                    <div className="text-center text-gray-500">
+                        {drawRequested && !drawAccepted ? (
+                            <div>
+                                <p>{game.turn() === 'w' ? 'Black' : 'White'} has requested a draw.</p>
+                                <button onClick={acceptDraw} className="text-green-400 hover:underline">Accept</button>
+                                <button onClick={declineDraw} className="text-red-400 hover:underline ml-2">Decline</button>
+                            </div>
+                        ) : drawAccepted ? (
+                            <p>Game drawn by mutual agreement.</p>
+                        ) : (
+                            <p>No draw requests.</p>
+                        )}
+                    </div>
+                    <div className="mt-4">
+                        {chatMessages.map((msg, index) => (
+                            <p key={index} className="text-white">{msg}</p>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
